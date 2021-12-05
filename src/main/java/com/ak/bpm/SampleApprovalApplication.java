@@ -37,6 +37,9 @@ public class SampleApprovalApplication {
     @Autowired
     private TaskService taskService;
 
+    @Autowired
+    private Credentials credentials;
+
 
     public static void main(String[] args) {
         ConfigurableApplicationContext ctx = SpringApplication.run(SampleApprovalApplication.class, args);
@@ -45,6 +48,8 @@ public class SampleApprovalApplication {
 
     @EventListener
     private void processPostDeploy(PostDeployEvent event) {
+        logger.info("username "+ credentials.getUSERNAME());
+        logger.info("password "+ credentials.getPASSWORD());
 
         String processInstanceId = runtimeService.startProcessInstanceByKey("sample-approval").getProcessInstanceId();
         logger.info("started instance sample");
@@ -118,5 +123,10 @@ public class SampleApprovalApplication {
                         .list();
 
         return processInstances.get(0);
+    }
+
+    public String printMessage(String message){
+        StringBuilder builder = new StringBuilder("hello");
+        return builder.append(message).toString();
     }
 }

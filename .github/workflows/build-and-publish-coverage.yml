@@ -1,0 +1,45 @@
+#################################################################
+# Security Scanner using SonarQube
+## compile code
+## publish scan results to Sonar Cloud
+## displays results in the PR or checks section
+###############################################################
+
+name: build-and-publish-to-sonar-cloud
+on:  # Triggers the workflow on push or pull request events
+  push:
+    branches:
+      # only for master branch
+      - master
+  pull_request:
+    # only for master and test-github-actions branches
+    types: [opened, synchronize, reopened]
+jobs:
+  build-and-publish:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: Set up JDK 11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+      - name: Cache Maven packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+      - name: Build and analyze
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=asalan316_spring-boot-camunda-bpm-example
