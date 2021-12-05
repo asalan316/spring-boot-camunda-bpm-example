@@ -1,0 +1,73 @@
+#####################################
+# Security Scanner using SonarQube
+### compile code
+### publish scan results to Sonar Server/Cloud
+### TODO: publish scan result to backend via REST API
+#####################################
+
+env:
+  # sonarqube server URL
+  SONARQUBE_LOGIN: {{secret.}}                  # default sonarqube username
+  SONARQUBE_PASSWORD: admin               # default sonarqube password
+
+name: Security Scanner
+on:
+  # Triggers the workflow on push or pull request events
+  push:
+    # only for master branch
+    branches: [ master ]
+  pull_request:
+    # only for master and test-github-actions branches
+    branches: [ master, test-github-actions ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequential or in parallel
+jobs:
+  scan-security:
+    runs-on: ubuntu-latest
+    # run a docker container on host machine, expose port 9000 accessible from host vm
+    # This step is not needed if customer already has sonar server/cloud
+    services:
+      sonar:
+        image: sonarqube:latest
+        ports:
+          - 9000:9000
+        env:
+          SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: true
+
+    steps:
+      - name: check connectivity
+        run: docker ps
+
+      - name: Checkout Source Code
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: setup maven
+        run: |
+          sudo apt install maven
+          mvn -version
+      - name: Build simple java app with maven
+        run: mvn -B package --file pom.xml
+
+      - name: check for jar
+        run: java -jar target/sample-approval-demo-0.0.1-SNAPSHOT.jar --project.name=AK-github-actions --project.version=0.1
+
+        # https://community.sonarsource.com/t/fail-to-parse-entry-in-bootstrap-index-returned-from-sonar-scanner/8788
+      - name: wait for some second for synchronization
+        run: sleep 10
+
+      - name: Run Sonar Scanner
+        run: mvn sonar:sonar -Dsonar.host.url="${{ env.SONARQUBE_URL }}" -Dsonar.login="${{ env.SONARQUBE_LOGIN }}" -Dsonar.password="${{ env.SONARQUBE_PASSWORD }}"
+        env:
+          SONARQUBE_URL: http://localhost:9000
+
+      - name: Read results from sonar server and save it to DB
+        run: |
+          mvn -B package --file pom.xml
+          java -jar target/sample-approval-demo-0.0.1-SNAPSHOT.jar --project.name=AK-github-actions --project.version=0.1
