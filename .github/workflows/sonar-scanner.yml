@@ -7,7 +7,7 @@
 
 env:
   # sonarqube server URL
-  SONARQUBE_LOGIN: {{secret.}}                  # default sonarqube username
+  SONARQUBE_LOGIN: admin                # default sonarqube username
   SONARQUBE_PASSWORD: admin               # default sonarqube password
 
 name: Security Scanner
